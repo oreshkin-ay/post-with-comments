@@ -10,6 +10,8 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.17
 )
 
+require golang.org/x/sys v0.26.0 // indirect
+
 require (
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -20,5 +22,4 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.28.0
 )
