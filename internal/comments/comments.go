@@ -17,15 +17,17 @@ type Comment struct {
 	CreatedAt       string
 }
 
-func (comment Comment) Save() int64 {
-	stmt, err := database.Db.Prepare("INSERT INTO comments (post_id, text, parent_comment_id) VALUES ($1, $2, $3) RETURNING id")
+func (comment Comment) Save(userID string) int64 {
+	// Add user_id to the INSERT statement
+	stmt, err := database.Db.Prepare("INSERT INTO comments (post_id, text, parent_comment_id, user_id) VALUES ($1, $2, $3, $4) RETURNING id")
 	if err != nil {
 		log.Fatal("Error preparing statement:", err)
 	}
 	defer stmt.Close()
 
 	var id int64
-	err = stmt.QueryRow(comment.PostID, comment.Text, comment.ParentCommentID).Scan(&id)
+	// Include userID as the 4th parameter in the statement execution
+	err = stmt.QueryRow(comment.PostID, comment.Text, comment.ParentCommentID, userID).Scan(&id)
 	if err != nil {
 		log.Fatal("Error executing statement:", err)
 	}

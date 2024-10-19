@@ -10,29 +10,48 @@ import (
 	"strconv"
 
 	"github.com/oreshkin/posts/graph/model"
+	"github.com/oreshkin/posts/internal/auth"
 	"github.com/oreshkin/posts/internal/comments"
+	"github.com/oreshkin/posts/internal/pkg/jwt"
 	"github.com/oreshkin/posts/internal/posts"
+	"github.com/oreshkin/posts/internal/users"
 )
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostInput) (*model.Post, error) {
+	user := auth.ForContext(ctx)
+	if user == nil {
+		return &model.Post{}, fmt.Errorf("access denied")
+	}
+
 	var post posts.Post
 	post.Title = input.Title
 	post.Content = input.Content
 	post.CommentsDisabled = input.CommentsDisabled
 
-	postID := post.Save()
+	postID := post.Save(user.ID)
+
+	graphqlUser := &model.User{
+		ID:   user.ID,
+		Name: user.Username,
+	}
 
 	return &model.Post{
 		ID:               strconv.FormatInt(postID, 10),
 		Title:            post.Title,
 		Content:          post.Content,
 		CommentsDisabled: post.CommentsDisabled,
+		User:             graphqlUser,
 	}, nil
 }
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCommentInput) (*model.Comment, error) {
+	user := auth.ForContext(ctx)
+	if user == nil {
+		return &model.Comment{}, fmt.Errorf("access denied")
+	}
+
 	var comment comments.Comment
 	postIDInt, err := strconv.ParseInt(input.PostID, 10, 64)
 	if err != nil {
@@ -52,7 +71,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		comment.ParentCommentID = nil
 	}
 
-	commentID := comment.Save()
+	commentID := comment.Save(user.ID)
 
 	var parentIDStr *string
 	if comment.ParentCommentID != nil {
@@ -66,6 +85,48 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		Text:            comment.Text,
 		ParentCommentID: parentIDStr,
 	}, nil
+}
+
+// CreateUser is the resolver for the createUser field.
+func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
+	var user users.User
+	user.Username = input.Username
+	user.Password = input.Password
+	user.Create()
+	token, err := jwt.GenerateToken(user.Username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
+	var user users.User
+	user.Username = input.Username
+	user.Password = input.Password
+	correct := user.Authenticate()
+	if !correct {
+		return "", &users.WrongUsernameOrPasswordError{}
+	}
+	token, err := jwt.GenerateToken(user.Username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// RefreshToken is the resolver for the refreshToken field.
+func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
+	username, err := jwt.ParseToken(input.Token)
+	if err != nil {
+		return "", fmt.Errorf("access denied")
+	}
+	token, err := jwt.GenerateToken(username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // Posts is the resolver for the posts field.

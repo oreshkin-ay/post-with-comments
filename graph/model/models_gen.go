@@ -21,6 +21,11 @@ type CommentEdge struct {
 	Node   *Comment `json:"node"`
 }
 
+type Login struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type Mutation struct {
 }
 
@@ -36,6 +41,11 @@ type NewPostInput struct {
 	CommentsDisabled bool   `json:"commentsDisabled"`
 }
 
+type NewUser struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type PageInfo struct {
 	EndCursor   string `json:"endCursor"`
 	HasNextPage bool   `json:"hasNextPage"`
@@ -45,6 +55,7 @@ type Post struct {
 	ID               string             `json:"id"`
 	Title            string             `json:"title"`
 	Content          string             `json:"content"`
+	User             *User              `json:"user"`
 	CommentsDisabled bool               `json:"commentsDisabled"`
 	Comments         *CommentConnection `json:"comments"`
 }
@@ -62,5 +73,14 @@ type PostEdge struct {
 type Query struct {
 }
 
+type RefreshTokenInput struct {
+	Token string `json:"token"`
+}
+
 type Subscription struct {
+}
+
+type User struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }

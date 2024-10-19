@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/oreshkin/posts/graph"
+	"github.com/oreshkin/posts/internal/auth"
 	database "github.com/oreshkin/posts/internal/pkg/db/postgres"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -22,6 +23,8 @@ func main() {
 	}
 
 	router := chi.NewRouter()
+
+	router.Use(auth.Middleware())
 
 	database.InitDB()
 	defer database.CloseDB()

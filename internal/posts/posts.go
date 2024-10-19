@@ -6,6 +6,7 @@ import (
 
 	"github.com/oreshkin/posts/internal/comments"
 	database "github.com/oreshkin/posts/internal/pkg/db/postgres"
+	"github.com/oreshkin/posts/internal/users"
 )
 
 type Post struct {
@@ -14,17 +15,18 @@ type Post struct {
 	Content          string
 	CommentsDisabled bool
 	Comments         []comments.Comment
+	User             *users.User
 }
 
-func (post Post) Save() int64 {
-	stmt, err := database.Db.Prepare("INSERT INTO posts (title, content, comments_disabled) VALUES ($1, $2, $3) RETURNING id")
+func (post Post) Save(userID string) int64 {
+	stmt, err := database.Db.Prepare("INSERT INTO posts (title, content, comments_disabled, user_id) VALUES ($1, $2, $3, $4) RETURNING id")
 	if err != nil {
 		log.Fatal("Error preparing statement:", err)
 	}
 	defer stmt.Close()
 
 	var id int64
-	err = stmt.QueryRow(post.Title, post.Content, post.CommentsDisabled).Scan(&id)
+	err = stmt.QueryRow(post.Title, post.Content, post.CommentsDisabled, userID).Scan(&id)
 	if err != nil {
 		log.Fatal("Error executing statement:", err)
 	}
