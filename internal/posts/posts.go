@@ -69,7 +69,6 @@ func GetPostsWithPagination(limit int, cursor *int64) ([]Post, *int64, error) {
              ORDER BY id DESC
              LIMIT $2`, cursor, limit)
 	} else {
-		// If no cursor is provided, fetch the latest posts
 		rows, err = database.Db.Query(
 			`SELECT id, title, content, comments_disabled
              FROM posts

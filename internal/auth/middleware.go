@@ -2,8 +2,10 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/oreshkin/posts/internal/pkg/jwt"
 	"github.com/oreshkin/posts/internal/users"
@@ -25,20 +27,31 @@ func Middleware() func(http.Handler) http.Handler {
 				return
 			}
 
-			tokenStr := header
-			username, err := jwt.ParseToken(tokenStr)
-			if err != nil {
-				http.Error(w, "Invalid token", http.StatusForbidden)
+			fields := strings.Fields(header)
+			if len(fields) != 2 || fields[0] != "Bearer" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token format"})
 				return
 			}
 
-			user := users.User{Username: username}
+			tokenStr := fields[1]
+
+			username, err := jwt.ParseToken(tokenStr)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token"})
+				return
+			}
+
 			id, err := users.GetUserIdByUsername(username)
 			if err != nil {
 				next.ServeHTTP(w, r)
 				return
 			}
-			user.ID = strconv.Itoa(id)
+
+			user := users.User{Username: username, ID: strconv.Itoa(id)}
 			ctx := context.WithValue(r.Context(), userCtxKey, &user)
 
 			r = r.WithContext(ctx)
