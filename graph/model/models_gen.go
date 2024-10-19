@@ -3,26 +3,31 @@
 package model
 
 type Comment struct {
-	ID        string             `json:"id"`
-	PostID    string             `json:"postId"`
-	Text      string             `json:"text"`
-	ParentID  *string            `json:"parentId,omitempty"`
-	CreatedAt string             `json:"createdAt"`
-	Children  *CommentConnection `json:"children"`
+	ID              string             `json:"id"`
+	PostID          string             `json:"postId"`
+	Text            string             `json:"text"`
+	ParentCommentID *string            `json:"parentCommentId,omitempty"`
+	CreatedAt       string             `json:"createdAt"`
+	Children        *CommentConnection `json:"children"`
 }
 
 type CommentConnection struct {
-	Edges    []*Comment `json:"edges"`
-	PageInfo *PageInfo  `json:"pageInfo"`
+	Edges    []*CommentEdge `json:"edges"`
+	PageInfo *PageInfo      `json:"pageInfo"`
+}
+
+type CommentEdge struct {
+	Cursor string   `json:"cursor"`
+	Node   *Comment `json:"node"`
 }
 
 type Mutation struct {
 }
 
 type NewCommentInput struct {
-	PostID   string  `json:"postId"`
-	Text     string  `json:"text"`
-	ParentID *string `json:"parentId,omitempty"`
+	PostID          string  `json:"postId"`
+	Text            string  `json:"text"`
+	ParentCommentID *string `json:"parentCommentId,omitempty"`
 }
 
 type NewPostInput struct {
@@ -45,8 +50,13 @@ type Post struct {
 }
 
 type PostConnection struct {
-	Edges    []*Post   `json:"edges"`
-	PageInfo *PageInfo `json:"pageInfo"`
+	Edges    []*PostEdge `json:"edges"`
+	PageInfo *PageInfo   `json:"pageInfo"`
+}
+
+type PostEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Post  `json:"node"`
 }
 
 type Query struct {

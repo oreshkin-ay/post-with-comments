@@ -33,7 +33,6 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostIn
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCommentInput) (*model.Comment, error) {
-
 	var comment comments.Comment
 	postIDInt, err := strconv.ParseInt(input.PostID, 10, 64)
 	if err != nil {
@@ -43,40 +42,163 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 
 	comment.Text = input.Text
 
-	if input.ParentID != nil {
-		parentIDInt, err := strconv.ParseInt(*input.ParentID, 10, 64)
+	if input.ParentCommentID != nil {
+		parentIDInt, err := strconv.ParseInt(*input.ParentCommentID, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid parent ID: %v", err)
 		}
-		comment.ParentID = &parentIDInt
+		comment.ParentCommentID = &parentIDInt
 	} else {
-		comment.ParentID = nil
+		comment.ParentCommentID = nil
 	}
 
 	commentID := comment.Save()
 
 	var parentIDStr *string
-	if comment.ParentID != nil {
+	if comment.ParentCommentID != nil {
 		parentIDStr = new(string)
-		*parentIDStr = strconv.FormatInt(*comment.ParentID, 10)
+		*parentIDStr = strconv.FormatInt(*comment.ParentCommentID, 10)
 	}
 
 	return &model.Comment{
-		ID:       strconv.FormatInt(commentID, 10),
-		PostID:   strconv.FormatInt(comment.PostID, 10),
-		Text:     comment.Text,
-		ParentID: parentIDStr,
+		ID:              strconv.FormatInt(commentID, 10),
+		PostID:          strconv.FormatInt(comment.PostID, 10),
+		Text:            comment.Text,
+		ParentCommentID: parentIDStr,
 	}, nil
 }
 
 // Posts is the resolver for the posts field.
-func (r *queryResolver) Posts(ctx context.Context, after *string, limit *int) (*model.PostConnection, error) {
-	panic(fmt.Errorf("not implemented: Posts - posts"))
+func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int) (*model.PostConnection, error) {
+	defaultLimit := 10
+	if limit != nil {
+		defaultLimit = *limit
+	}
+
+	var parsedCursor *int64
+	if cursor != nil {
+		parsedCursorValue, err := strconv.ParseInt(*cursor, 10, 64)
+		if err != nil {
+			return &model.PostConnection{
+				Edges:    []*model.PostEdge{},
+				PageInfo: &model.PageInfo{EndCursor: "", HasNextPage: false},
+			}, nil
+		}
+		parsedCursor = &parsedCursorValue
+	}
+
+	posts, lastPostID, err := posts.GetPostsWithPagination(defaultLimit, parsedCursor)
+	if err != nil {
+		return &model.PostConnection{
+			Edges:    []*model.PostEdge{},
+			PageInfo: &model.PageInfo{EndCursor: "", HasNextPage: false},
+		}, nil
+	}
+
+	var edges []*model.PostEdge
+	for _, post := range posts {
+		edges = append(edges, &model.PostEdge{
+			Cursor: strconv.FormatInt(post.ID, 10),
+			Node: &model.Post{
+				ID:               strconv.FormatInt(post.ID, 10),
+				Title:            post.Title,
+				Content:          post.Content,
+				CommentsDisabled: post.CommentsDisabled,
+			},
+		})
+	}
+
+	hasNextPage := len(posts) == defaultLimit
+
+	var endCursor string
+	if lastPostID != nil {
+		endCursor = strconv.FormatInt(*lastPostID, 10)
+	} else {
+		endCursor = ""
+	}
+
+	return &model.PostConnection{
+		Edges: edges,
+		PageInfo: &model.PageInfo{
+			EndCursor:   endCursor,
+			HasNextPage: hasNextPage,
+		},
+	}, nil
 }
 
 // Post is the resolver for the post field.
-func (r *queryResolver) Post(ctx context.Context, id string) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: Post - post"))
+func (r *queryResolver) Post(ctx context.Context, id string, parentCommentID *string, cursor *string, limit *int) (*model.Post, error) {
+	defaultLimit := 10
+	if limit != nil {
+		defaultLimit = *limit
+	}
+
+	post, err := posts.GetPostByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch post by ID: %w", err)
+	}
+	if post == nil {
+		return nil, fmt.Errorf("post with ID %s not found", id)
+	}
+
+	var parsedCursor *int64
+	if cursor != nil {
+		parsedCursorValue, err := strconv.ParseInt(*cursor, 10, 64)
+		if err != nil {
+			return comments.EmptyPostWithNoComments(post.ID, post.Title, post.Content, post.CommentsDisabled), nil
+		}
+		parsedCursor = &parsedCursorValue
+	}
+
+	fetchedComments, err := comments.GetCommentsByPostIDWithPagination(post.ID, parsedCursor, defaultLimit, parentCommentID)
+	if err != nil || len(fetchedComments) == 0 {
+		return comments.EmptyPostWithNoComments(post.ID, post.Title, post.Content, post.CommentsDisabled), nil
+	}
+
+	var commentEdges []*model.CommentEdge
+	for _, comment := range fetchedComments {
+		var parentIDStr *string
+		if comment.ParentCommentID != nil {
+			parentIDStr = new(string)
+			*parentIDStr = strconv.FormatInt(*comment.ParentCommentID, 10)
+		}
+
+		commentEdges = append(commentEdges, &model.CommentEdge{
+			Cursor: strconv.FormatInt(comment.ID, 10),
+			Node: &model.Comment{
+				ID:              strconv.FormatInt(comment.ID, 10),
+				PostID:          strconv.FormatInt(comment.PostID, 10),
+				Text:            comment.Text,
+				ParentCommentID: parentIDStr,
+				CreatedAt:       comment.CreatedAt,
+			},
+		})
+	}
+
+	var lastCommentCursor *string
+	if len(fetchedComments) > 0 {
+		lastCommentID := fetchedComments[len(fetchedComments)-1].ID
+		lastCommentCursorStr := strconv.FormatInt(lastCommentID, 10)
+		lastCommentCursor = &lastCommentCursorStr
+	}
+
+	hasNextPage := len(fetchedComments) == defaultLimit
+
+	commentConnection := &model.CommentConnection{
+		Edges: commentEdges,
+		PageInfo: &model.PageInfo{
+			EndCursor:   comments.LastCommentCursorOrDefault(lastCommentCursor),
+			HasNextPage: hasNextPage,
+		},
+	}
+
+	return &model.Post{
+		ID:               strconv.FormatInt(post.ID, 10),
+		Title:            post.Title,
+		Content:          post.Content,
+		CommentsDisabled: post.CommentsDisabled,
+		Comments:         commentConnection,
+	}, nil
 }
 
 // CommentAdded is the resolver for the commentAdded field.

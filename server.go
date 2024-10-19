@@ -27,6 +27,19 @@ func main() {
 	defer database.CloseDB()
 
 	database.Migrate()
+	// for i := 1; i <= 30; i++ {
+	// 	title := fmt.Sprintf("Post Title %d", i)
+	// 	content := fmt.Sprintf("This is the content of post number %d. Automatically generated for testing.", i)
+	// 	commentsDisabled := rand.Intn(2) == 0
+
+	// 	post := posts.Post{
+	// 		Title:            title,
+	// 		Content:          content,
+	// 		CommentsDisabled: commentsDisabled,
+	// 	}
+
+	// 	post.Save()
+	// }
 
 	server := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
 

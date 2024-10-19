@@ -7,7 +7,7 @@ input NewPostInput {
 input NewCommentInput {
   postId: ID!
   text: String!
-  parentId: ID
+  parentCommentId: ID
 }
 
 type Post {
@@ -15,25 +15,36 @@ type Post {
   title: String!
   content: String!
   commentsDisabled: Boolean!
-  comments(after: String, limit: Int): CommentConnection!
+  comments(parentCommentId: ID, cursor: String, limit: Int): CommentConnection!
 }
 
 type Comment {
   id: ID!
   postId: ID!
   text: String!
-  parentId: ID
+  parentCommentId: ID
   createdAt: String!
-  children(after: String, limit: Int): CommentConnection!
+  children(cursor: String, limit: Int): CommentConnection!  
+}
+
+
+type PostEdge {
+  cursor: String!
+  node: Post!
+}
+
+type CommentEdge {
+  cursor: String!
+  node: Comment!
 }
 
 type CommentConnection {
-  edges: [Comment!]!
+  edges: [CommentEdge!]!   
   pageInfo: PageInfo!
 }
 
 type PostConnection {
-  edges: [Post!]!
+  edges: [PostEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -43,8 +54,9 @@ type PageInfo {
 }
 
 type Query {
-  posts(after: String, limit: Int): PostConnection!
-  post(id: ID!): Post
+  posts(cursor: String, limit: Int): PostConnection!  
+  post(id: ID!, parentCommentId: ID, cursor: String, limit: Int): Post!
+
 }
 
 type Mutation {
