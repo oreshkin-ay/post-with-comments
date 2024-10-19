@@ -64,8 +64,8 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateComment func(childComplexity int, postID string, text string, parentID *string) int
-		CreatePost    func(childComplexity int, title string, content string, commentsDisabled bool) int
+		CreateComment func(childComplexity int, input model.NewCommentInput) int
+		CreatePost    func(childComplexity int, input model.NewPostInput) int
 	}
 
 	PageInfo struct {
@@ -97,8 +97,8 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	CreatePost(ctx context.Context, title string, content string, commentsDisabled bool) (*model.Post, error)
-	CreateComment(ctx context.Context, postID string, text string, parentID *string) (*model.Comment, error)
+	CreatePost(ctx context.Context, input model.NewPostInput) (*model.Post, error)
+	CreateComment(ctx context.Context, input model.NewCommentInput) (*model.Comment, error)
 }
 type QueryResolver interface {
 	Posts(ctx context.Context, after *string, limit *int) (*model.PostConnection, error)
@@ -198,7 +198,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateComment(childComplexity, args["postId"].(string), args["text"].(string), args["parentId"].(*string)), true
+		return e.complexity.Mutation.CreateComment(childComplexity, args["input"].(model.NewCommentInput)), true
 
 	case "Mutation.createPost":
 		if e.complexity.Mutation.CreatePost == nil {
@@ -210,7 +210,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePost(childComplexity, args["title"].(string), args["content"].(string), args["commentsDisabled"].(bool)), true
+		return e.complexity.Mutation.CreatePost(childComplexity, args["input"].(model.NewPostInput)), true
 
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
@@ -323,7 +323,10 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputNewCommentInput,
+		ec.unmarshalInputNewPostInput,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -500,118 +503,46 @@ func (ec *executionContext) field_Comment_children_argsLimit(
 func (ec *executionContext) field_Mutation_createComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	arg0, err := ec.field_Mutation_createComment_argsPostID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_createComment_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["postId"] = arg0
-	arg1, err := ec.field_Mutation_createComment_argsText(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["text"] = arg1
-	arg2, err := ec.field_Mutation_createComment_argsParentID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["parentId"] = arg2
+	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_createComment_argsPostID(
+func (ec *executionContext) field_Mutation_createComment_argsInput(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("postId"))
-	if tmp, ok := rawArgs["postId"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
+) (model.NewCommentInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNNewCommentInput2githubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐNewCommentInput(ctx, tmp)
 	}
 
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_createComment_argsText(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
-	if tmp, ok := rawArgs["text"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_createComment_argsParentID(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("parentId"))
-	if tmp, ok := rawArgs["parentId"]; ok {
-		return ec.unmarshalOID2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
+	var zeroVal model.NewCommentInput
 	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createPost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	arg0, err := ec.field_Mutation_createPost_argsTitle(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_createPost_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["title"] = arg0
-	arg1, err := ec.field_Mutation_createPost_argsContent(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["content"] = arg1
-	arg2, err := ec.field_Mutation_createPost_argsCommentsDisabled(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["commentsDisabled"] = arg2
+	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_createPost_argsTitle(
+func (ec *executionContext) field_Mutation_createPost_argsInput(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-	if tmp, ok := rawArgs["title"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
+) (model.NewPostInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNNewPostInput2githubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐNewPostInput(ctx, tmp)
 	}
 
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_createPost_argsContent(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
-	if tmp, ok := rawArgs["content"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_createPost_argsCommentsDisabled(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (bool, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("commentsDisabled"))
-	if tmp, ok := rawArgs["commentsDisabled"]; ok {
-		return ec.unmarshalNBoolean2bool(ctx, tmp)
-	}
-
-	var zeroVal bool
+	var zeroVal model.NewPostInput
 	return zeroVal, nil
 }
 
@@ -1220,7 +1151,7 @@ func (ec *executionContext) _Mutation_createPost(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["title"].(string), fc.Args["content"].(string), fc.Args["commentsDisabled"].(bool))
+		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["input"].(model.NewPostInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1287,7 +1218,7 @@ func (ec *executionContext) _Mutation_createComment(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateComment(rctx, fc.Args["postId"].(string), fc.Args["text"].(string), fc.Args["parentId"].(*string))
+		return ec.resolvers.Mutation().CreateComment(rctx, fc.Args["input"].(model.NewCommentInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3883,6 +3814,88 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputNewCommentInput(ctx context.Context, obj interface{}) (model.NewCommentInput, error) {
+	var it model.NewCommentInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"postId", "text", "parentId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "postId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PostID = data
+		case "text":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Text = data
+		case "parentId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ParentID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewPostInput(ctx context.Context, obj interface{}) (model.NewPostInput, error) {
+	var it model.NewPostInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "content", "commentsDisabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		case "commentsDisabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commentsDisabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommentsDisabled = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4732,6 +4745,16 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNNewCommentInput2githubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐNewCommentInput(ctx context.Context, v interface{}) (model.NewCommentInput, error) {
+	res, err := ec.unmarshalInputNewCommentInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewPostInput2githubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐNewPostInput(ctx context.Context, v interface{}) (model.NewPostInput, error) {
+	res, err := ec.unmarshalInputNewPostInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {

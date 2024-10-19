@@ -1,3 +1,15 @@
+input NewPostInput {
+  title: String!
+  content: String!
+  commentsDisabled: Boolean!
+}
+
+input NewCommentInput {
+  postId: ID!
+  text: String!
+  parentId: ID
+}
+
 type Post {
   id: ID!
   title: String!
@@ -36,8 +48,8 @@ type Query {
 }
 
 type Mutation {
-  createPost(title: String!, content: String!, commentsDisabled: Boolean!): Post!
-  createComment(postId: ID!, text: String!, parentId: ID): Comment!
+  createPost(input: NewPostInput!): Post!
+  createComment(input: NewCommentInput!): Comment!
 }
 
 type Subscription {

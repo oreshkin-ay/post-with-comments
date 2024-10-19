@@ -7,18 +7,66 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/oreshkin/posts/graph/model"
+	"github.com/oreshkin/posts/internal/comments"
+	"github.com/oreshkin/posts/internal/posts"
 )
 
 // CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string, commentsDisabled bool) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostInput) (*model.Post, error) {
+	var post posts.Post
+	post.Title = input.Title
+	post.Content = input.Content
+	post.CommentsDisabled = input.CommentsDisabled
+
+	postID := post.Save()
+
+	return &model.Post{
+		ID:               strconv.FormatInt(postID, 10),
+		Title:            post.Title,
+		Content:          post.Content,
+		CommentsDisabled: post.CommentsDisabled,
+	}, nil
 }
 
 // CreateComment is the resolver for the createComment field.
-func (r *mutationResolver) CreateComment(ctx context.Context, postID string, text string, parentID *string) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented: CreateComment - createComment"))
+func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCommentInput) (*model.Comment, error) {
+
+	var comment comments.Comment
+	postIDInt, err := strconv.ParseInt(input.PostID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid post ID: %v", err)
+	}
+	comment.PostID = postIDInt
+
+	comment.Text = input.Text
+
+	if input.ParentID != nil {
+		parentIDInt, err := strconv.ParseInt(*input.ParentID, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid parent ID: %v", err)
+		}
+		comment.ParentID = &parentIDInt
+	} else {
+		comment.ParentID = nil
+	}
+
+	commentID := comment.Save()
+
+	var parentIDStr *string
+	if comment.ParentID != nil {
+		parentIDStr = new(string)
+		*parentIDStr = strconv.FormatInt(*comment.ParentID, 10)
+	}
+
+	return &model.Comment{
+		ID:       strconv.FormatInt(commentID, 10),
+		PostID:   strconv.FormatInt(comment.PostID, 10),
+		Text:     comment.Text,
+		ParentID: parentIDStr,
+	}, nil
 }
 
 // Posts is the resolver for the posts field.
@@ -48,34 +96,3 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *mutationResolver) CreateLink(ctx context.Context, input model.NewLink) (*model.Link, error) {
-	panic(fmt.Errorf("not implemented: CreateLink - createLink"))
-}
-func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
-}
-func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
-}
-func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
-	panic(fmt.Errorf("not implemented: RefreshToken - refreshToken"))
-}
-func (r *queryResolver) Links(ctx context.Context) ([]*model.Link, error) {
-	var links []*model.Link
-	dummyLink := model.Link{
-		Title:   "our dummy link",
-		Address: "https://address.org",
-		User:    &model.User{Name: "admin"},
-	}
-	links = append(links, &dummyLink)
-	return links, nil
-}
-*/

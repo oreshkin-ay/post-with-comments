@@ -19,6 +19,18 @@ type CommentConnection struct {
 type Mutation struct {
 }
 
+type NewCommentInput struct {
+	PostID   string  `json:"postId"`
+	Text     string  `json:"text"`
+	ParentID *string `json:"parentId,omitempty"`
+}
+
+type NewPostInput struct {
+	Title            string `json:"title"`
+	Content          string `json:"content"`
+	CommentsDisabled bool   `json:"commentsDisabled"`
+}
+
 type PageInfo struct {
 	EndCursor   string `json:"endCursor"`
 	HasNextPage bool   `json:"hasNextPage"`
