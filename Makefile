@@ -10,6 +10,8 @@ APP_CONTAINER = app
 MIGRATION_PATH = internal/pkg/db/migrations/postgres
 DB_URL = "postgres://postgres:dbpass@localhost:5432/posts_with_comments?sslmode=disable"
 
+.PHONY: test
+
 build:
 	$(DC) build
 
@@ -46,6 +48,10 @@ lint:
 # Форматирование кода
 format:
 	gofmt -w .
+
+# Запуск всех тестов
+test:
+	go test ./... -v
 
 # Команды для миграций
 migration-create-users:
