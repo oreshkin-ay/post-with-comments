@@ -12,6 +12,10 @@ DB_URL = "postgres://postgres:dbpass@localhost:5432/posts_with_comments?sslmode=
 
 .PHONY: test
 
+up_build:
+	$(DC) build
+	$(DC) up -d
+
 build:
 	$(DC) build
 
