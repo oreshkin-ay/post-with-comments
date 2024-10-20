@@ -29,7 +29,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostIn
 	post.Content = input.Content
 	post.CommentsDisabled = input.CommentsDisabled
 
-	postID := post.Save(user.ID)
+	postID := r.PostRepository.Save(post, user.ID)
 
 	graphqlUser := &model.User{
 		ID:   user.ID,
@@ -57,7 +57,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		return nil, fmt.Errorf("invalid post ID: %v", err)
 	}
 
-	post, err := posts.GetPostByID(input.PostID)
+	post, err := r.PostRepository.GetPostByID(input.PostID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch post: %w", err)
 	}
@@ -65,7 +65,6 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		return nil, fmt.Errorf("post with ID %s not found", input.PostID)
 	}
 
-	// If comments are disabled, return an error
 	if post.CommentsDisabled {
 		return nil, fmt.Errorf("comments are disabled for this post")
 	}
@@ -86,7 +85,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		comment.ParentCommentID = nil
 	}
 
-	commentID := comment.Save(user.ID)
+	commentID := r.CommentRepository.Save(comment, user.ID)
 
 	var parentIDStr *string
 	if comment.ParentCommentID != nil {
@@ -104,7 +103,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 
 // UpdateCommentsDisabled is the resolver for the updateCommentsDisabled field.
 func (r *mutationResolver) UpdateCommentsDisabled(ctx context.Context, input model.UpdateCommentsDisabledInput) (*model.Post, error) {
-	post, err := posts.GetPostByID(input.PostID)
+	post, err := r.PostRepository.GetPostByID(input.PostID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch post: %w", err)
 	}
@@ -112,7 +111,7 @@ func (r *mutationResolver) UpdateCommentsDisabled(ctx context.Context, input mod
 		return nil, fmt.Errorf("post with ID %s not found", input.PostID)
 	}
 
-	err = posts.UpdateCommentsDisabled(input.PostID, input.CommentsDisabled)
+	err = r.PostRepository.UpdateCommentsDisabled(input.PostID, input.CommentsDisabled)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update post: %w", err)
 	}
@@ -187,7 +186,7 @@ func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int) (
 		parsedCursor = &parsedCursorValue
 	}
 
-	posts, lastPostID, err := posts.GetPostsWithPagination(defaultLimit, parsedCursor)
+	posts, lastPostID, err := r.PostRepository.GetPostsWithPagination(defaultLimit, parsedCursor)
 	if err != nil {
 		return &model.PostConnection{
 			Edges:    []*model.PostEdge{},
@@ -233,7 +232,7 @@ func (r *queryResolver) Post(ctx context.Context, id string, parentCommentID *st
 		defaultLimit = *limit
 	}
 
-	post, err := posts.GetPostByID(id)
+	post, err := r.PostRepository.GetPostByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch post by ID: %w", err)
 	}
@@ -250,7 +249,7 @@ func (r *queryResolver) Post(ctx context.Context, id string, parentCommentID *st
 		parsedCursor = &parsedCursorValue
 	}
 
-	fetchedComments, err := comments.GetCommentsByPostIDWithPagination(post.ID, parsedCursor, defaultLimit, parentCommentID)
+	fetchedComments, err := r.CommentRepository.GetCommentsByPostIDWithPagination(post.ID, parsedCursor, defaultLimit, parentCommentID)
 	if err != nil || len(fetchedComments) == 0 {
 		return comments.EmptyPostWithNoComments(post.ID, post.Title, post.Content, post.CommentsDisabled), nil
 	}

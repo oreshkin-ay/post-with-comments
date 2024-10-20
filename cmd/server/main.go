@@ -7,7 +7,9 @@ import (
 
 	"github.com/oreshkin/posts/graph"
 	"github.com/oreshkin/posts/internal/auth"
+	"github.com/oreshkin/posts/internal/comments"
 	database "github.com/oreshkin/posts/internal/pkg/db/postgres"
+	"github.com/oreshkin/posts/internal/posts"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -35,7 +37,19 @@ func main() {
 
 	database.Migrate()
 
-	server := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	postRepository := &posts.DBPostRepository{}
+	commentRepository := &comments.DBCommentRepository{}
+
+	server := handler.NewDefaultServer(
+		graph.NewExecutableSchema(
+			graph.Config{
+				Resolvers: &graph.Resolver{
+					PostRepository:    postRepository,
+					CommentRepository: commentRepository,
+				},
+			},
+		),
+	)
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", server)

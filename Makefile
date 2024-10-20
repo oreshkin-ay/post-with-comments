@@ -43,6 +43,10 @@ clean:
 lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run ./...
 
+# Форматирование кода
+format:
+	gofmt -w .
+
 # Команды для миграций
 migration-create-users:
 	cd internal/pkg/db/migrations/ && migrate create -ext sql -dir postgres -seq create_users_table

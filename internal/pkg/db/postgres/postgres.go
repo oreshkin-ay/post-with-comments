@@ -15,8 +15,6 @@ import (
 var Db *sql.DB
 
 func InitDB() {
-	// connStr := "postgres://postgres:dbpass@localhost/posts_with_comments?sslmode=disable"
-
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 	dbUser := os.Getenv("DB_USER")
@@ -27,7 +25,6 @@ func InitDB() {
 		log.Panic("Database environment variables are not set")
 	}
 
-	// Формируем строку подключения
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	db, err := sql.Open("postgres", connStr)
