@@ -52,11 +52,26 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		return &model.Comment{}, fmt.Errorf("access denied")
 	}
 
-	var comment comments.Comment
 	postIDInt, err := strconv.ParseInt(input.PostID, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid post ID: %v", err)
 	}
+
+	post, err := posts.GetPostByID(input.PostID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch post: %w", err)
+	}
+	if post == nil {
+		return nil, fmt.Errorf("post with ID %s not found", input.PostID)
+	}
+
+	// If comments are disabled, return an error
+	if post.CommentsDisabled {
+		return nil, fmt.Errorf("comments are disabled for this post")
+	}
+
+	var comment comments.Comment
+
 	comment.PostID = postIDInt
 
 	comment.Text = input.Text

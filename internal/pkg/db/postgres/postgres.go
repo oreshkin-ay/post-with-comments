@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,7 +15,21 @@ import (
 var Db *sql.DB
 
 func InitDB() {
-	connStr := "postgres://postgres:dbpass@localhost/posts_with_comments?sslmode=disable"
+	// connStr := "postgres://postgres:dbpass@localhost/posts_with_comments?sslmode=disable"
+
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+
+	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
+		log.Panic("Database environment variables are not set")
+	}
+
+	// Формируем строку подключения
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, dbHost, dbPort, dbName)
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Panic(err)
@@ -39,11 +55,18 @@ func Migrate() {
 		log.Fatal(err)
 	}
 
+	// m, err := migrate.NewWithDatabaseInstance(
+	// 	"file://internal/pkg/db/migrations/postgres",
+	// 	"postgres",
+	// 	driver,
+	// )
+
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/pkg/db/migrations/postgres",
+		"file:///root/migrations/postgres", // Убедитесь, что путь соответствует контейнеру
 		"postgres",
 		driver,
 	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
