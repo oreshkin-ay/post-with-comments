@@ -73,15 +73,20 @@ type User {
   name: String!
 }
 
+input UpdateCommentsDisabledInput {
+  postId: ID!
+  commentsDisabled: Boolean!
+}
+
 type Query {
   posts(cursor: String, limit: Int): PostConnection!  
   post(id: ID!, parentCommentId: ID, cursor: String, limit: Int): Post!
-
 }
 
 type Mutation {
   createPost(input: NewPostInput!): Post!
   createComment(input: NewCommentInput!): Comment!
+  updateCommentsDisabled(input: UpdateCommentsDisabledInput!): Post!
 
   createUser(input: NewUser!): String!
   login(input: Login!): String!

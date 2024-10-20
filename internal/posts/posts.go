@@ -101,3 +101,20 @@ func GetPostsWithPagination(limit int, cursor *int64) ([]Post, *int64, error) {
 
 	return posts, lastPostID, nil
 }
+
+func UpdateCommentsDisabled(postID string, commentsDisabled bool) error {
+	stmt, err := database.Db.Prepare("UPDATE posts SET comments_disabled = $1 WHERE id = $2")
+	if err != nil {
+		log.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(commentsDisabled, postID)
+	if err != nil {
+		log.Println("Error executing update:", err)
+		return err
+	}
+
+	return nil
+}

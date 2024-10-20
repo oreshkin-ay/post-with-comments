@@ -55,14 +55,13 @@ func Migrate() {
 		log.Fatal(err)
 	}
 
-	// m, err := migrate.NewWithDatabaseInstance(
-	// 	"file://internal/pkg/db/migrations/postgres",
-	// 	"postgres",
-	// 	driver,
-	// )
+	migrationPath := os.Getenv("MIGRATION_PATH")
+	if migrationPath == "" {
+		migrationPath = "file://internal/pkg/db/migrations/postgres"
+	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///root/migrations/postgres", // Убедитесь, что путь соответствует контейнеру
+		migrationPath,
 		"postgres",
 		driver,
 	)

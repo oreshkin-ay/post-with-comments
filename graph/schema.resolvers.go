@@ -102,6 +102,30 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 	}, nil
 }
 
+// UpdateCommentsDisabled is the resolver for the updateCommentsDisabled field.
+func (r *mutationResolver) UpdateCommentsDisabled(ctx context.Context, input model.UpdateCommentsDisabledInput) (*model.Post, error) {
+	post, err := posts.GetPostByID(input.PostID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch post: %w", err)
+	}
+	if post == nil {
+		return nil, fmt.Errorf("post with ID %s not found", input.PostID)
+	}
+
+	err = posts.UpdateCommentsDisabled(input.PostID, input.CommentsDisabled)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update post: %w", err)
+	}
+
+	post.CommentsDisabled = input.CommentsDisabled
+	return &model.Post{
+		ID:               strconv.FormatInt(post.ID, 10),
+		Title:            post.Title,
+		Content:          post.Content,
+		CommentsDisabled: post.CommentsDisabled,
+	}, nil
+}
+
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
 	var user users.User

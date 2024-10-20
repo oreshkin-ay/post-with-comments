@@ -2,7 +2,7 @@ version: '3'
 services:
   db:
     image: postgres:latest
-    container_name: postgres-posts
+    container_name: postgres-pwc
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: dbpass
@@ -15,13 +15,14 @@ services:
   app:
     build:
       context: .
-    container_name: app-posts
+    container_name: app-pwc
     environment:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: dbpass
       DB_NAME: posts_with_comments
+      MIGRATION_PATH: "file:///root/migrations/postgres"
     depends_on:
       - db
     ports:

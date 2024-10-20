@@ -69,11 +69,12 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateComment func(childComplexity int, input model.NewCommentInput) int
-		CreatePost    func(childComplexity int, input model.NewPostInput) int
-		CreateUser    func(childComplexity int, input model.NewUser) int
-		Login         func(childComplexity int, input model.Login) int
-		RefreshToken  func(childComplexity int, input model.RefreshTokenInput) int
+		CreateComment          func(childComplexity int, input model.NewCommentInput) int
+		CreatePost             func(childComplexity int, input model.NewPostInput) int
+		CreateUser             func(childComplexity int, input model.NewUser) int
+		Login                  func(childComplexity int, input model.Login) int
+		RefreshToken           func(childComplexity int, input model.RefreshTokenInput) int
+		UpdateCommentsDisabled func(childComplexity int, input model.UpdateCommentsDisabledInput) int
 	}
 
 	PageInfo struct {
@@ -118,6 +119,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreatePost(ctx context.Context, input model.NewPostInput) (*model.Post, error)
 	CreateComment(ctx context.Context, input model.NewCommentInput) (*model.Comment, error)
+	UpdateCommentsDisabled(ctx context.Context, input model.UpdateCommentsDisabledInput) (*model.Post, error)
 	CreateUser(ctx context.Context, input model.NewUser) (string, error)
 	Login(ctx context.Context, input model.Login) (string, error)
 	RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error)
@@ -284,6 +286,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.RefreshToken(childComplexity, args["input"].(model.RefreshTokenInput)), true
 
+	case "Mutation.updateCommentsDisabled":
+		if e.complexity.Mutation.UpdateCommentsDisabled == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCommentsDisabled_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCommentsDisabled(childComplexity, args["input"].(model.UpdateCommentsDisabledInput)), true
+
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
 			break
@@ -436,6 +450,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNewPostInput,
 		ec.unmarshalInputNewUser,
 		ec.unmarshalInputRefreshTokenInput,
+		ec.unmarshalInputUpdateCommentsDisabledInput,
 	)
 	first := true
 
@@ -722,6 +737,29 @@ func (ec *executionContext) field_Mutation_refreshToken_argsInput(
 	}
 
 	var zeroVal model.RefreshTokenInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCommentsDisabled_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Mutation_updateCommentsDisabled_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateCommentsDisabled_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (model.UpdateCommentsDisabledInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateCommentsDisabledInput2githubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐUpdateCommentsDisabledInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateCommentsDisabledInput
 	return zeroVal, nil
 }
 
@@ -1614,6 +1652,75 @@ func (ec *executionContext) fieldContext_Mutation_createComment(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createComment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCommentsDisabled(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCommentsDisabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCommentsDisabled(rctx, fc.Args["input"].(model.UpdateCommentsDisabledInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Post)
+	fc.Result = res
+	return ec.marshalNPost2ᚖgithubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCommentsDisabled(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Post_title(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "user":
+				return ec.fieldContext_Post_user(ctx, field)
+			case "commentsDisabled":
+				return ec.fieldContext_Post_commentsDisabled(ctx, field)
+			case "comments":
+				return ec.fieldContext_Post_comments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCommentsDisabled_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4742,6 +4849,40 @@ func (ec *executionContext) unmarshalInputRefreshTokenInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateCommentsDisabledInput(ctx context.Context, obj interface{}) (model.UpdateCommentsDisabledInput, error) {
+	var it model.UpdateCommentsDisabledInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"postId", "commentsDisabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "postId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PostID = data
+		case "commentsDisabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commentsDisabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommentsDisabled = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4928,6 +5069,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createComment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createComment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateCommentsDisabled":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCommentsDisabled(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5894,6 +6042,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateCommentsDisabledInput2githubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐUpdateCommentsDisabledInput(ctx context.Context, v interface{}) (model.UpdateCommentsDisabledInput, error) {
+	res, err := ec.unmarshalInputUpdateCommentsDisabledInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋoreshkinᚋpostsᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
