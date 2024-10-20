@@ -31,7 +31,11 @@ func Middleware() func(http.Handler) http.Handler {
 			if len(fields) != 2 || fields[0] != "Bearer" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusForbidden)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token format"})
+
+				if err := json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token"}); err != nil {
+					http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+					return
+				}
 				return
 			}
 
@@ -41,7 +45,11 @@ func Middleware() func(http.Handler) http.Handler {
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusForbidden)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token"})
+
+				if err := json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token"}); err != nil {
+					http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+					return
+				}
 				return
 			}
 
