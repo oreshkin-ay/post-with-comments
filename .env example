@@ -1,0 +1,7 @@
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=dbpass
+DB_NAME=posts_with_comments
+MIGRATION_PATH=file://internal/pkg/db/migrations/postgres
+DB_URL=postgres://postgres:dbpass@localhost:5432/posts_with_comments?sslmode=disable
