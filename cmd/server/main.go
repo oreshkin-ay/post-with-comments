@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/oreshkin/posts/graph"
 	"github.com/oreshkin/posts/internal/auth"
 	"github.com/oreshkin/posts/internal/comments"
@@ -19,6 +20,10 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
