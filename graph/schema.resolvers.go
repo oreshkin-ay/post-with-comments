@@ -109,12 +109,21 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 
 // UpdateCommentsDisabled is the resolver for the updateCommentsDisabled field.
 func (r *mutationResolver) UpdateCommentsDisabled(ctx context.Context, input model.UpdateCommentsDisabledInput) (*model.Post, error) {
+	user := auth.ForContext(ctx)
+	if user == nil {
+		return nil, fmt.Errorf("access denied")
+	}
+
 	post, err := r.PostRepository.GetPostByID(input.PostID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch post: %w", err)
 	}
 	if post == nil {
 		return nil, fmt.Errorf("post with ID %s not found", input.PostID)
+	}
+
+	if post.User.ID != user.ID {
+		return nil, fmt.Errorf("you are not authorized to update this post")
 	}
 
 	err = r.PostRepository.UpdateCommentsDisabled(input.PostID, input.CommentsDisabled)
