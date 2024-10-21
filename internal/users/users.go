@@ -2,12 +2,10 @@ package users
 
 import (
 	"database/sql"
+	"errors"
 
 	database "github.com/oreshkin/posts/internal/pkg/db/postgres"
-
 	"golang.org/x/crypto/bcrypt"
-
-	"log"
 )
 
 type User struct {
@@ -16,37 +14,40 @@ type User struct {
 	Password string `json:"password"`
 }
 
-func (user *User) Create() {
+// Create creates a new user in the database
+func (user *User) Create() error {
 	statement, err := database.Db.Prepare("INSERT INTO users(username, password) VALUES($1, $2)")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	defer statement.Close()
 
 	hashedPassword, err := HashPassword(user.Password)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	_, err = statement.Exec(user.Username, hashedPassword)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
+// GetUserIdByUsername returns the ID of a user by their username
 func GetUserIdByUsername(username string) (int, error) {
 	statement, err := database.Db.Prepare("SELECT id FROM users WHERE username = $1")
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 	defer statement.Close()
 
 	var id int
 	row := statement.QueryRow(username)
-
 	err = row.Scan(&id)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			log.Print(err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
 		}
 		return 0, err
 	}
@@ -54,32 +55,39 @@ func GetUserIdByUsername(username string) (int, error) {
 	return id, nil
 }
 
+// HashPassword hashes the given password
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
+// CheckPasswordHash checks if the provided password matches the hashed password
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
-func (user *User) Authenticate() bool {
-	statement, err := database.Db.Prepare("select Password from Users WHERE Username = ?")
+// Authenticate authenticates the user by verifying the username and password
+func (user *User) Authenticate() (bool, error) {
+	statement, err := database.Db.Prepare("SELECT password FROM users WHERE username = $1")
 	if err != nil {
-		log.Fatal(err)
+		return false, err
 	}
-	row := statement.QueryRow(user.Username)
+	defer statement.Close()
 
 	var hashedPassword string
+	row := statement.QueryRow(user.Username)
 	err = row.Scan(&hashedPassword)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return false
-		} else {
-			log.Fatal(err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
 		}
+		return false, err
 	}
 
-	return CheckPasswordHash(user.Password, hashedPassword)
+	isValid := CheckPasswordHash(user.Password, hashedPassword)
+	return isValid, nil
 }

@@ -2,6 +2,7 @@ package comments
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	database "github.com/oreshkin/posts/internal/pkg/db/postgres"
@@ -16,23 +17,25 @@ type Comment struct {
 	ChildCommentCount int
 }
 
-func (comment Comment) Save(userID string) int64 {
+// Save saves the comment to the database and returns its ID
+func (comment Comment) Save(userID string) (int64, error) {
 	stmt, err := database.Db.Prepare("INSERT INTO comments (post_id, text, parent_comment_id, user_id) VALUES ($1, $2, $3, $4) RETURNING id")
 	if err != nil {
-		log.Fatal("Error preparing statement:", err)
+		return 0, fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
 	var id int64
 	err = stmt.QueryRow(comment.PostID, comment.Text, comment.ParentCommentID, userID).Scan(&id)
 	if err != nil {
-		log.Fatal("Error executing statement:", err)
+		return 0, fmt.Errorf("error executing statement: %w", err)
 	}
 
-	log.Print("Comment inserted with ID:", id)
-	return id
+	log.Printf("Comment inserted with ID: %d", id)
+	return id, nil
 }
 
+// GetCommentsByPostIDWithPagination returns paginated comments for a given post ID
 func GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, parentCommentID *string) ([]Comment, error) {
 	var rows *sql.Rows
 	var err error
@@ -76,7 +79,7 @@ func GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, p
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error executing query: %w", err)
 	}
 	defer rows.Close()
 
@@ -87,11 +90,15 @@ func GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, p
 		var childCommentCount int
 		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Text, &comment.ParentCommentID, &comment.CreatedAt, &childCommentCount)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning row: %w", err)
 		}
 
 		comment.ChildCommentCount = childCommentCount
 		comments = append(comments, comment)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during row iteration: %w", err)
 	}
 
 	return comments, nil

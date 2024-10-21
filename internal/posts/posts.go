@@ -2,6 +2,7 @@ package posts
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/oreshkin/posts/internal/comments"
@@ -18,30 +19,31 @@ type Post struct {
 	User             *users.User
 }
 
-func (post Post) Save(userID string) int64 {
+// Save saves a post to the database and returns the post's ID
+func (post Post) Save(userID string) (int64, error) {
 	stmt, err := database.Db.Prepare("INSERT INTO posts (title, content, comments_disabled, user_id) VALUES ($1, $2, $3, $4) RETURNING id")
 	if err != nil {
-		log.Fatal("Error preparing statement:", err)
+		return 0, fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
 	var id int64
 	err = stmt.QueryRow(post.Title, post.Content, post.CommentsDisabled, userID).Scan(&id)
 	if err != nil {
-		log.Fatal("Error executing statement:", err)
+		return 0, fmt.Errorf("error executing statement: %w", err)
 	}
 
-	log.Print("Post inserted with ID:", id)
-	return id
+	log.Printf("Post inserted with ID: %d", id)
+	return id, nil
 }
 
+// GetPostByID returns a post by its ID
 func GetPostByID(postID string) (*Post, error) {
 	var post Post
 
 	stmt, err := database.Db.Prepare("SELECT id, title, content, comments_disabled FROM posts WHERE id = $1")
 	if err != nil {
-		log.Fatal("Error preparing statement:", err)
-		return nil, err
+		return nil, fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 
@@ -50,13 +52,13 @@ func GetPostByID(postID string) (*Post, error) {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		log.Fatal("Error executing statement:", err)
-		return nil, err
+		return nil, fmt.Errorf("error executing statement: %w", err)
 	}
 
 	return &post, nil
 }
 
+// GetPostsWithPagination returns a list of posts with pagination and a cursor
 func GetPostsWithPagination(limit int, cursor *int64) ([]Post, *int64, error) {
 	var rows *sql.Rows
 	var err error
@@ -77,7 +79,7 @@ func GetPostsWithPagination(limit int, cursor *int64) ([]Post, *int64, error) {
 	}
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("error executing query: %w", err)
 	}
 	defer rows.Close()
 
@@ -88,7 +90,7 @@ func GetPostsWithPagination(limit int, cursor *int64) ([]Post, *int64, error) {
 		var post Post
 		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CommentsDisabled)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("error scanning row: %w", err)
 		}
 
 		posts = append(posts, post)
@@ -96,24 +98,23 @@ func GetPostsWithPagination(limit int, cursor *int64) ([]Post, *int64, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("error during row iteration: %w", err)
 	}
 
 	return posts, lastPostID, nil
 }
 
+// UpdateCommentsDisabled updates the commentsDisabled flag for a post
 func UpdateCommentsDisabled(postID string, commentsDisabled bool) error {
 	stmt, err := database.Db.Prepare("UPDATE posts SET comments_disabled = $1 WHERE id = $2")
 	if err != nil {
-		log.Println("Error preparing statement:", err)
-		return err
+		return fmt.Errorf("error preparing update statement: %w", err)
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(commentsDisabled, postID)
 	if err != nil {
-		log.Println("Error executing update:", err)
-		return err
+		return fmt.Errorf("error executing update: %w", err)
 	}
 
 	return nil

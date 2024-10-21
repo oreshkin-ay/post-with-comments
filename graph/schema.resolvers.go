@@ -29,7 +29,10 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPostIn
 	post.Content = input.Content
 	post.CommentsDisabled = input.CommentsDisabled
 
-	postID := r.PostRepository.Save(post, user.ID)
+	postID, err := r.PostRepository.Save(post, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save post: %w", err)
+	}
 
 	graphqlUser := &model.User{
 		ID:   user.ID,
@@ -85,7 +88,10 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		comment.ParentCommentID = nil
 	}
 
-	commentID := r.CommentRepository.Save(comment, user.ID)
+	commentID, err := r.CommentRepository.Save(comment, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save comment: %w", err)
+	}
 
 	var parentIDStr *string
 	if comment.ParentCommentID != nil {
@@ -143,14 +149,20 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string
 	var user users.User
 	user.Username = input.Username
 	user.Password = input.Password
-	correct := user.Authenticate()
+
+	correct, err := user.Authenticate()
+	if err != nil {
+		return "", fmt.Errorf("authentication failed: %w", err)
+	}
 	if !correct {
 		return "", &users.WrongUsernameOrPasswordError{}
 	}
+
 	token, err := jwt.GenerateToken(user.Username)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
+
 	return token, nil
 }
 

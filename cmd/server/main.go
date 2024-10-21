@@ -33,14 +33,19 @@ func main() {
 
 	router.Use(auth.Middleware())
 
-	database.InitDB()
+	if err := database.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
 	defer func() {
 		if err := database.CloseDB(); err != nil {
 			log.Printf("Error closing the database: %v", err)
 		}
 	}()
 
-	database.Migrate()
+	if err := database.Migrate(); err != nil {
+		log.Fatalf("Failed to apply migrations: %v", err)
+	}
 
 	postRepository := &posts.DBPostRepository{}
 	commentRepository := &comments.DBCommentRepository{}
@@ -59,6 +64,8 @@ func main() {
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", server)
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Printf("Connect to http://localhost:%s/ for GraphQL playground", port)
+	if err := http.ListenAndServe(":"+port, router); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

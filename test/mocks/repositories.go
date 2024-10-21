@@ -10,9 +10,9 @@ type MockPostRepository struct {
 	mock.Mock
 }
 
-func (m *MockPostRepository) Save(post posts.Post, userID string) int64 {
+func (m *MockPostRepository) Save(post posts.Post, userID string) (int64, error) {
 	args := m.Called(post, userID)
-	return args.Get(0).(int64)
+	return args.Get(0).(int64), nil
 }
 
 func (m *MockPostRepository) GetPostByID(postID string) (*posts.Post, error) {
@@ -34,9 +34,9 @@ type MockCommentRepository struct {
 	mock.Mock
 }
 
-func (m *MockCommentRepository) Save(comment comments.Comment, userID string) int64 {
+func (m *MockCommentRepository) Save(comment comments.Comment, userID string) (int64, error) {
 	args := m.Called(comment, userID)
-	return args.Get(0).(int64)
+	return args.Get(0).(int64), nil
 }
 
 func (m *MockCommentRepository) GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, parentCommentID *string) ([]comments.Comment, error) {

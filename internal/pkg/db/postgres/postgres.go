@@ -14,7 +14,8 @@ import (
 
 var Db *sql.DB
 
-func InitDB() {
+// InitDB initializes the database connection
+func InitDB() error {
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 	dbUser := os.Getenv("DB_USER")
@@ -22,34 +23,41 @@ func InitDB() {
 	dbName := os.Getenv("DB_NAME")
 
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
-		log.Panic("Database environment variables are not set")
+		return fmt.Errorf("database environment variables are not set")
 	}
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Panic(err)
+		return fmt.Errorf("failed to open database connection: %w", err)
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Panic(err)
+		return fmt.Errorf("failed to ping the database: %w", err)
 	}
+
 	Db = db
+	return nil
 }
 
+// CloseDB closes the database connection
 func CloseDB() error {
-	return Db.Close()
+	if Db != nil {
+		return Db.Close()
+	}
+	return nil
 }
 
-func Migrate() {
+// Migrate applies migrations
+func Migrate() error {
 	if err := Db.Ping(); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to ping the database: %w", err)
 	}
 
 	driver, err := postgres.WithInstance(Db, &postgres.Config{})
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create postgres driver: %w", err)
 	}
 
 	migrationPath := os.Getenv("MIGRATION_PATH")
@@ -64,12 +72,13 @@ func Migrate() {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal(err)
+		return fmt.Errorf("migration failed: %w", err)
 	}
 
 	log.Println("Migrations applied successfully.")
+	return nil
 }
