@@ -26,8 +26,8 @@ type Comment {
   parentCommentId: ID
   createdAt: String!
   children(cursor: String, limit: Int): CommentConnection!  
+  childCommentCount: Int!
 }
-
 
 type PostEdge {
   cursor: String!
@@ -54,7 +54,7 @@ type PageInfo {
   hasNextPage: Boolean!
 }
 
-input RefreshTokenInput{
+input RefreshTokenInput {
   token: String!
 }
 

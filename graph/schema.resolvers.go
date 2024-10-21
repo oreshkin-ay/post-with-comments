@@ -265,11 +265,12 @@ func (r *queryResolver) Post(ctx context.Context, id string, parentCommentID *st
 		commentEdges = append(commentEdges, &model.CommentEdge{
 			Cursor: strconv.FormatInt(comment.ID, 10),
 			Node: &model.Comment{
-				ID:              strconv.FormatInt(comment.ID, 10),
-				PostID:          strconv.FormatInt(comment.PostID, 10),
-				Text:            comment.Text,
-				ParentCommentID: parentIDStr,
-				CreatedAt:       comment.CreatedAt,
+				ID:                strconv.FormatInt(comment.ID, 10),
+				PostID:            strconv.FormatInt(comment.PostID, 10),
+				Text:              comment.Text,
+				ParentCommentID:   parentIDStr,
+				CreatedAt:         comment.CreatedAt,
+				ChildCommentCount: comment.ChildCommentCount,
 			},
 		})
 	}

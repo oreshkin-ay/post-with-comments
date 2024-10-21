@@ -3,12 +3,13 @@
 package model
 
 type Comment struct {
-	ID              string             `json:"id"`
-	PostID          string             `json:"postId"`
-	Text            string             `json:"text"`
-	ParentCommentID *string            `json:"parentCommentId,omitempty"`
-	CreatedAt       string             `json:"createdAt"`
-	Children        *CommentConnection `json:"children"`
+	ID                string             `json:"id"`
+	PostID            string             `json:"postId"`
+	Text              string             `json:"text"`
+	ParentCommentID   *string            `json:"parentCommentId,omitempty"`
+	CreatedAt         string             `json:"createdAt"`
+	Children          *CommentConnection `json:"children"`
+	ChildCommentCount int                `json:"childCommentCount"`
 }
 
 type CommentConnection struct {

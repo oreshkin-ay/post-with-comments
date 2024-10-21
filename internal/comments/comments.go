@@ -8,11 +8,12 @@ import (
 )
 
 type Comment struct {
-	ID              int64
-	PostID          int64
-	Text            string
-	ParentCommentID *int64
-	CreatedAt       string
+	ID                int64
+	PostID            int64
+	Text              string
+	ParentCommentID   *int64
+	CreatedAt         string
+	ChildCommentCount int
 }
 
 func (comment Comment) Save(userID string) int64 {
@@ -39,14 +40,16 @@ func GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, p
 	if parentCommentID == nil {
 		if cursor != nil {
 			rows, err = database.Db.Query(
-				`SELECT id, post_id, text, parent_comment_id, created_at
+				`SELECT id, post_id, text, parent_comment_id, created_at,
+				 (SELECT COUNT(*) FROM comments AS child_comments WHERE child_comments.parent_comment_id = comments.id) AS child_comment_count
 				 FROM comments
 				 WHERE post_id = $1 AND parent_comment_id IS NULL AND id < $2
 				 ORDER BY id DESC
 				 LIMIT $3`, postID, *cursor, limit)
 		} else {
 			rows, err = database.Db.Query(
-				`SELECT id, post_id, text, parent_comment_id, created_at
+				`SELECT id, post_id, text, parent_comment_id, created_at,
+				 (SELECT COUNT(*) FROM comments AS child_comments WHERE child_comments.parent_comment_id = comments.id) AS child_comment_count
 				 FROM comments
 				 WHERE post_id = $1 AND parent_comment_id IS NULL
 				 ORDER BY id DESC
@@ -55,14 +58,16 @@ func GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, p
 	} else {
 		if cursor != nil {
 			rows, err = database.Db.Query(
-				`SELECT id, post_id, text, parent_comment_id, created_at
+				`SELECT id, post_id, text, parent_comment_id, created_at,
+				 (SELECT COUNT(*) FROM comments AS child_comments WHERE child_comments.parent_comment_id = comments.id) AS child_comment_count
 				 FROM comments
 				 WHERE post_id = $1 AND parent_comment_id = $2 AND id < $3
 				 ORDER BY id DESC
 				 LIMIT $4`, postID, *parentCommentID, *cursor, limit)
 		} else {
 			rows, err = database.Db.Query(
-				`SELECT id, post_id, text, parent_comment_id, created_at
+				`SELECT id, post_id, text, parent_comment_id, created_at,
+				 (SELECT COUNT(*) FROM comments AS child_comments WHERE child_comments.parent_comment_id = comments.id) AS child_comment_count
 				 FROM comments
 				 WHERE post_id = $1 AND parent_comment_id = $2
 				 ORDER BY id DESC
@@ -79,12 +84,14 @@ func GetCommentsByPostIDWithPagination(postID int64, cursor *int64, limit int, p
 
 	for rows.Next() {
 		var comment Comment
-		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Text, &comment.ParentCommentID, &comment.CreatedAt)
+		var childCommentCount int
+		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Text, &comment.ParentCommentID, &comment.CreatedAt, &childCommentCount)
 		if err != nil {
 			return nil, err
 		}
-		comments = append(comments, comment)
 
+		comment.ChildCommentCount = childCommentCount
+		comments = append(comments, comment)
 	}
 
 	return comments, nil
