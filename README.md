@@ -32,7 +32,105 @@
 
 ### Примеры запросов:
 
+- Создание пользователя:
+```graphql
+mutation {
+  createUser(input: {username: "user26", password: "123"})
+}
+
+- Создание поста:
+```graphql
+mutation CreatePost($input: NewPostInput!) {
+  createPost(input: $input) {
+    id
+    title
+    content
+    commentsDisabled
+  }
+}
+
+Variables (пример).
+```json
+{
+  "input": {
+    "title": "Новый пост",
+    "content": "Содержимое нового поста",
+    "commentsDisabled": true
+  }
+}
+
+Headers (пример).
+```json
+{
+  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mjk2MTQxNDcsInVzZXJuYW1lIjoidXNlcjI2In0.ONnm2xc8dVkOUdBPWt8nDAknslXi_t0J0K3lnlqG8ds"
+}
+
+- Изменение флага на разрешение комментировать пост:
+```graphql
+mutation UpdateCommentsDisabled($input: UpdateCommentsDisabledInput!) {
+  updateCommentsDisabled(input: $input) {
+    id
+    title
+    content
+    commentsDisabled
+  }
+}
+
+Variables (пример).
+```json
+{
+  "input": {
+    "postId": "1",
+    "commentsDisabled":  true
+  }
+}
+
 - Получение списка постов:
+```graphql
+query Posts($cursor: String, $limit: Int, $commentsLimit: Int) {
+  posts(cursor: $cursor, limit: $limit, commentsLimit: $commentsLimit) {
+    edges {
+      cursor
+      node {
+        id
+        title
+        content
+        commentsDisabled
+        comments {
+          edges {
+            node {
+              id
+              text
+              parentCommentId
+              createdAt
+            }
+          }
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+        }
+      }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+  }
+}
+
+
+Variables (пример).
+```json
+{
+  "cursor": null,
+  "limit": 10,
+  "commentsLimit": 2
+}
+
+
+
+- Получение поста и его комментариев:
 ```graphql
 query Post($id: ID!, $parentCommentID: ID, $cursor: String, $limit: Int) {
   post(id: $id, parentCommentId: $parentCommentID, cursor: $cursor, limit: $limit) {
@@ -60,11 +158,11 @@ query Post($id: ID!, $parentCommentID: ID, $cursor: String, $limit: Int) {
   }
 }
 
-
 Variables (пример).
 ```json
 {
-  "cursor": "2",
-  "limit": 5,
-  "commentsLimit": null
+  "id": "1",                
+  "parentCommentID": null,    
+  "cursor": null,            
+  "limit": 10                
 }

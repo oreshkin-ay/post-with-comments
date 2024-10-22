@@ -72,37 +72,35 @@ func GetPostsWithPagination(limit int, cursor *int64, commentsLimit *int) ([]Pos
 		rows, err = database.Db.Query(
 			`SELECT p.id, p.title, p.content, p.comments_disabled, 
                     COALESCE(c.id, 0) AS comment_id, c.text AS comment_text, c.parent_comment_id
-            FROM posts p
+            FROM (
+                SELECT id, title, content, comments_disabled
+                FROM posts
+                WHERE id < $1
+                ORDER BY id DESC
+                LIMIT $2
+            ) p
             LEFT JOIN (
-                SELECT c.id, c.text, c.parent_comment_id, c.post_id
+                SELECT c.id, c.text, c.parent_comment_id, c.post_id,
+                       ROW_NUMBER() OVER (PARTITION BY c.post_id ORDER BY c.created_at DESC) AS rn
                 FROM comments c
-                WHERE c.id IN (
-                    SELECT id FROM comments
-                    WHERE post_id = c.post_id
-                    ORDER BY created_at DESC
-                    LIMIT $3
-                )
-            ) c ON p.id = c.post_id
-            WHERE p.id < $1
-            ORDER BY p.id DESC
-            LIMIT $2`, *cursor, limit, *commentsLimit)
+            ) c ON p.id = c.post_id AND c.rn <= $3
+            ORDER BY p.id DESC`, *cursor, limit, *commentsLimit)
 	} else {
 		rows, err = database.Db.Query(
 			`SELECT p.id, p.title, p.content, p.comments_disabled, 
                     COALESCE(c.id, 0) AS comment_id, c.text AS comment_text, c.parent_comment_id
-            FROM posts p
+            FROM (
+                SELECT id, title, content, comments_disabled
+                FROM posts
+                ORDER BY id DESC
+                LIMIT $1
+            ) p
             LEFT JOIN (
-                SELECT c.id, c.text, c.parent_comment_id, c.post_id
+                SELECT c.id, c.text, c.parent_comment_id, c.post_id,
+                       ROW_NUMBER() OVER (PARTITION BY c.post_id ORDER BY c.created_at DESC) AS rn
                 FROM comments c
-                WHERE c.id IN (
-                    SELECT id FROM comments
-                    WHERE post_id = c.post_id
-                    ORDER BY created_at DESC
-                    LIMIT $2
-                )
-            ) c ON p.id = c.post_id
-            ORDER BY p.id DESC
-            LIMIT $1`, limit, *commentsLimit)
+            ) c ON p.id = c.post_id AND c.rn <= $2
+            ORDER BY p.id DESC`, limit, *commentsLimit)
 	}
 
 	if err != nil {
@@ -117,10 +115,14 @@ func GetPostsWithPagination(limit int, cursor *int64, commentsLimit *int) ([]Pos
 	for rows.Next() {
 		var post Post
 		var comment comments.Comment
-
-		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CommentsDisabled, &comment.ID, &comment.Text, &comment.ParentCommentID)
+		var commentText *string
+		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CommentsDisabled, &comment.ID, &commentText, &comment.ParentCommentID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error scanning row: %w", err)
+		}
+
+		if commentText != nil {
+			comment.Text = *commentText
 		}
 
 		if lastPostID == nil || *lastPostID > post.ID {
