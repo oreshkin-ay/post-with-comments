@@ -20,7 +20,7 @@ func (m *MockPostRepository) GetPostByID(postID string) (*posts.Post, error) {
 	return args.Get(0).(*posts.Post), args.Error(1)
 }
 
-func (m *MockPostRepository) GetPostsWithPagination(limit int, cursor *int64) ([]posts.Post, *int64, error) {
+func (m *MockPostRepository) GetPostsWithPagination(limit int, cursor *int64, commentsLimit *int) ([]posts.Post, *int64, error) {
 	args := m.Called(limit, cursor)
 	return args.Get(0).([]posts.Post), args.Get(1).(*int64), args.Error(2)
 }

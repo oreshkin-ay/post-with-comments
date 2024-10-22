@@ -50,7 +50,7 @@ lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run ./...
 
 # Форматирование кода
-format:
+fmt:
 	gofmt -w .
 
 # Запуск всех тестов

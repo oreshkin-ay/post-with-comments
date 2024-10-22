@@ -72,7 +72,7 @@ func TestPostsResolver(t *testing.T) {
 		PostRepository: mockPostRepository,
 	}
 
-	result, err := resolver.Query().Posts(ctx, nil, nil)
+	result, err := resolver.Query().Posts(ctx, nil, nil, nil)
 
 	assert.NoError(t, err)
 	assert.Len(t, result.Edges, 2)

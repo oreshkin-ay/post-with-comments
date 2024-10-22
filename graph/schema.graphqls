@@ -79,7 +79,7 @@ input UpdateCommentsDisabledInput {
 }
 
 type Query {
-  posts(cursor: String, limit: Int): PostConnection!  
+  posts(cursor: String, limit: Int, commentsLimit: Int): PostConnection!  
   post(id: ID!, parentCommentId: ID, cursor: String, limit: Int): Post!
 }
 
@@ -93,6 +93,3 @@ type Mutation {
   refreshToken(input: RefreshTokenInput!): String!
 }
 
-type Subscription {
-  commentAdded(postId: ID!): Comment!
-}

@@ -189,7 +189,7 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 }
 
 // Posts is the resolver for the posts field.
-func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int) (*model.PostConnection, error) {
+func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int, commentsLimit *int) (*model.PostConnection, error) {
 	defaultLimit := 10
 	if limit != nil {
 		defaultLimit = *limit
@@ -207,7 +207,7 @@ func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int) (
 		parsedCursor = &parsedCursorValue
 	}
 
-	posts, lastPostID, err := r.PostRepository.GetPostsWithPagination(defaultLimit, parsedCursor)
+	posts, lastPostID, err := r.PostRepository.GetPostsWithPagination(defaultLimit, parsedCursor, commentsLimit)
 	if err != nil {
 		return &model.PostConnection{
 			Edges:    []*model.PostEdge{},
@@ -217,6 +217,26 @@ func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int) (
 
 	var edges []*model.PostEdge
 	for _, post := range posts {
+		var commentEdges []*model.CommentEdge
+		for _, comment := range post.Comments {
+			var parentIDStr *string
+			if comment.ParentCommentID != nil {
+				parentIDStr = new(string)
+				*parentIDStr = strconv.FormatInt(*comment.ParentCommentID, 10)
+			}
+
+			commentEdges = append(commentEdges, &model.CommentEdge{
+				Cursor: strconv.FormatInt(comment.ID, 10),
+				Node: &model.Comment{
+					ID:              strconv.FormatInt(comment.ID, 10),
+					PostID:          strconv.FormatInt(comment.PostID, 10),
+					Text:            comment.Text,
+					ParentCommentID: parentIDStr,
+					CreatedAt:       comment.CreatedAt,
+				},
+			})
+		}
+
 		edges = append(edges, &model.PostEdge{
 			Cursor: strconv.FormatInt(post.ID, 10),
 			Node: &model.Post{
@@ -224,6 +244,13 @@ func (r *queryResolver) Posts(ctx context.Context, cursor *string, limit *int) (
 				Title:            post.Title,
 				Content:          post.Content,
 				CommentsDisabled: post.CommentsDisabled,
+				Comments: &model.CommentConnection{
+					Edges: commentEdges,
+					PageInfo: &model.PageInfo{
+						EndCursor:   "",
+						HasNextPage: false,
+					},
+				},
 			},
 		})
 	}
@@ -322,20 +349,11 @@ func (r *queryResolver) Post(ctx context.Context, id string, parentCommentID *st
 	}, nil
 }
 
-// CommentAdded is the resolver for the commentAdded field.
-func (r *subscriptionResolver) CommentAdded(ctx context.Context, postID string) (<-chan *model.Comment, error) {
-	panic(fmt.Errorf("not implemented: CommentAdded - commentAdded"))
-}
-
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// Subscription returns SubscriptionResolver implementation.
-func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
-
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type subscriptionResolver struct{ *Resolver }
