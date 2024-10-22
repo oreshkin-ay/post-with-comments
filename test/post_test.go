@@ -57,12 +57,19 @@ func TestPostsResolver(t *testing.T) {
 			Title:            "Тестовый пост 1",
 			Content:          "Контент тестового поста 1",
 			CommentsDisabled: false,
+			Comments: []comments.Comment{
+				{ID: 1, Text: "Комментарий 1 к посту 1", ParentCommentID: nil},
+				{ID: 2, Text: "Комментарий 2 к посту 1", ParentCommentID: nil},
+			},
 		},
 		{
 			ID:               2,
 			Title:            "Тестовый пост 2",
 			Content:          "Контент тестового поста 2",
 			CommentsDisabled: false,
+			Comments: []comments.Comment{
+				{ID: 3, Text: "Комментарий 1 к посту 2", ParentCommentID: nil},
+			},
 		},
 	}
 
@@ -81,9 +88,16 @@ func TestPostsResolver(t *testing.T) {
 	assert.Equal(t, "Тестовый пост 1", result.Edges[0].Node.Title)
 	assert.Equal(t, "Контент тестового поста 1", result.Edges[0].Node.Content)
 
+	assert.Len(t, result.Edges[0].Node.Comments.Edges, 2)
+	assert.Equal(t, "Комментарий 1 к посту 1", result.Edges[0].Node.Comments.Edges[0].Node.Text)
+	assert.Equal(t, "Комментарий 2 к посту 1", result.Edges[0].Node.Comments.Edges[1].Node.Text)
+
 	assert.Equal(t, "2", result.Edges[1].Cursor)
 	assert.Equal(t, "Тестовый пост 2", result.Edges[1].Node.Title)
 	assert.Equal(t, "Контент тестового поста 2", result.Edges[1].Node.Content)
+
+	assert.Len(t, result.Edges[1].Node.Comments.Edges, 1)
+	assert.Equal(t, "Комментарий 1 к посту 2", result.Edges[1].Node.Comments.Edges[0].Node.Text)
 
 	assert.False(t, result.PageInfo.HasNextPage)
 	assert.Equal(t, "", result.PageInfo.EndCursor)
