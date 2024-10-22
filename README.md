@@ -37,6 +37,7 @@
 mutation {
   createUser(input: {username: "user26", password: "123"})
 }
+```
 
 - Создание поста:
 ```graphql
@@ -48,6 +49,7 @@ mutation CreatePost($input: NewPostInput!) {
     commentsDisabled
   }
 }
+```
 
 Variables (пример).
 ```json
@@ -58,12 +60,14 @@ Variables (пример).
     "commentsDisabled": true
   }
 }
+```
 
 Headers (пример).
 ```json
 {
   "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mjk2MTQxNDcsInVzZXJuYW1lIjoidXNlcjI2In0.ONnm2xc8dVkOUdBPWt8nDAknslXi_t0J0K3lnlqG8ds"
 }
+```
 
 - Изменение флага на разрешение комментировать пост:
 ```graphql
@@ -75,6 +79,7 @@ mutation UpdateCommentsDisabled($input: UpdateCommentsDisabledInput!) {
     commentsDisabled
   }
 }
+```
 
 Variables (пример).
 ```json
@@ -84,6 +89,7 @@ Variables (пример).
     "commentsDisabled":  true
   }
 }
+```
 
 - Получение списка постов:
 ```graphql
@@ -118,7 +124,7 @@ query Posts($cursor: String, $limit: Int, $commentsLimit: Int) {
     }
   }
 }
-
+```
 
 Variables (пример).
 ```json
@@ -127,8 +133,7 @@ Variables (пример).
   "limit": 10,
   "commentsLimit": 2
 }
-
-
+```
 
 - Получение поста и его комментариев:
 ```graphql
@@ -157,6 +162,7 @@ query Post($id: ID!, $parentCommentID: ID, $cursor: String, $limit: Int) {
     }
   }
 }
+```
 
 Variables (пример).
 ```json
@@ -166,3 +172,4 @@ Variables (пример).
   "cursor": null,            
   "limit": 10                
 }
+```
