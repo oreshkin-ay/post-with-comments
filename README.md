@@ -73,6 +73,57 @@ Headers (пример).
 }
 ```
 
+- Создание комментария:
+```graphql
+mutation CreateComment($input: NewCommentInput!) {
+  createComment(input: $input) {
+    id
+    postId
+    text
+    parentCommentId
+    createdAt
+  }
+}
+```
+
+Variables (пример).
+```json
+{
+  "input": {
+    "postId": "17",
+    "text": "This is a comment88",
+    "parentCommentId": null
+  }
+}
+```
+
+Headers (пример).
+```json
+{
+  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mjk2MTQxNDcsInVzZXJuYW1lIjoidXNlcjI2In0.ONnm2xc8dVkOUdBPWt8nDAknslXi_t0J0K3lnlqG8ds"
+}
+```
+
+- Подписка на комментарии поста:
+```graphql
+subscription NewComment($postId: ID!) {
+  newComment(postId: $postId) {
+    id
+    postId
+    text
+    parentCommentId
+    createdAt
+  }
+}
+```
+
+Variables (пример).
+```json
+{
+  "postId": "17"
+}
+```
+
 - Изменение флага на разрешение комментировать пост:
 ```graphql
 mutation UpdateCommentsDisabled($input: UpdateCommentsDisabledInput!) {
