@@ -39,7 +39,7 @@
 - Создание пользователя:
 ```graphql
 mutation {
-  createUser(input: {username: "user26", password: "123"})
+  createUser(input: {username: "user", password: "123"})
 }
 ```
 
@@ -91,7 +91,7 @@ Variables (пример).
 {
   "input": {
     "postId": "17",
-    "text": "This is a comment88",
+    "text": "Комментарий к посту 17",
     "parentCommentId": null
   }
 }
