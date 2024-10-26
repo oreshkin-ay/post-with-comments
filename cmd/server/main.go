@@ -7,6 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/oreshkin/posts/graph"
+	"github.com/oreshkin/posts/graph/model"
 	"github.com/oreshkin/posts/internal/auth"
 	"github.com/oreshkin/posts/internal/comments"
 	database "github.com/oreshkin/posts/internal/pkg/db/postgres"
@@ -56,6 +57,7 @@ func main() {
 				Resolvers: &graph.Resolver{
 					PostRepository:    postRepository,
 					CommentRepository: commentRepository,
+					CommentChannel:    make(chan *model.Comment),
 				},
 			},
 		),

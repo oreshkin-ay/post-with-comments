@@ -93,3 +93,6 @@ type Mutation {
   refreshToken(input: RefreshTokenInput!): String!
 }
 
+ type Subscription {
+  newComment(postId: ID!): Comment!
+}

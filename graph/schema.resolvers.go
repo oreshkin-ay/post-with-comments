@@ -61,10 +61,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 	}
 
 	post, err := r.PostRepository.GetPostByID(input.PostID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch post: %w", err)
-	}
-	if post == nil {
+	if err != nil || post == nil {
 		return nil, fmt.Errorf("post with ID %s not found", input.PostID)
 	}
 
@@ -73,11 +70,8 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 	}
 
 	var comment comments.Comment
-
 	comment.PostID = postIDInt
-
 	comment.Text = input.Text
-
 	if input.ParentCommentID != nil {
 		parentIDInt, err := strconv.ParseInt(*input.ParentCommentID, 10, 64)
 		if err != nil {
@@ -98,13 +92,19 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		parentIDStr = new(string)
 		*parentIDStr = strconv.FormatInt(*comment.ParentCommentID, 10)
 	}
-
-	return &model.Comment{
+	newComment := &model.Comment{
 		ID:              strconv.FormatInt(commentID, 10),
 		PostID:          strconv.FormatInt(comment.PostID, 10),
 		Text:            comment.Text,
 		ParentCommentID: parentIDStr,
-	}, nil
+		CreatedAt:       comment.CreatedAt,
+	}
+
+	go func() {
+		r.CommentChannel <- newComment
+	}()
+
+	return newComment, nil
 }
 
 // UpdateCommentsDisabled is the resolver for the updateCommentsDisabled field.
@@ -349,11 +349,35 @@ func (r *queryResolver) Post(ctx context.Context, id string, parentCommentID *st
 	}, nil
 }
 
+func (r *subscriptionResolver) NewComment(ctx context.Context, postID string) (<-chan *model.Comment, error) {
+	comments := make(chan *model.Comment, 1)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				close(comments)
+				return
+			case newComment := <-r.CommentChannel:
+				if newComment.PostID == postID {
+					comments <- newComment
+				}
+			}
+		}
+	}()
+
+	return comments, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }

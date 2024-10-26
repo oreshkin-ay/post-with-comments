@@ -78,6 +78,9 @@ type RefreshTokenInput struct {
 	Token string `json:"token"`
 }
 
+type Subscription struct {
+}
+
 type UpdateCommentsDisabledInput struct {
 	PostID           string `json:"postId"`
 	CommentsDisabled bool   `json:"commentsDisabled"`
